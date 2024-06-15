@@ -164,3 +164,4 @@ cython_debug/
 # Local directory and files
 /content/*
 !/content/README.md
+/pages/
