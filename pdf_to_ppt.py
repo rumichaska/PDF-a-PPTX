@@ -12,7 +12,7 @@ from pptx.util import Inches
 
 # FUNCIONES ----
 
-def pdf_to_pptx(pdf_path, filename, zoom_factor=2):
+def pdf_to_png(pdf_path, filename, zoom_factor=2):
     """Covierte un archivo pdf en pptx"""
 
     # Patrón del nombre del pdf
@@ -63,32 +63,33 @@ def get_tables(png_path, out_path, filename):
     lower_purple = np.array([120, 40, 40])
     upper_purple = np.array([150, 255, 255])
 
-    # Create a mask for purple color
+    # Crear unas máscara para el color patrón
     mask_purple = cv2.inRange(hsv, lower_purple, upper_purple)
 
-    # Find contours in the mask
+    # Ubicar contornos de la máscara
     contours_purple, _ = cv2.findContours(mask_purple, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Filter out small contours that are not likely to be the purple border
+    # Descartar pequeños contornos que no sean del color patrón
     contours_purple = [cnt for cnt in contours_purple if cv2.contourArea(cnt) > 100]
 
-    # If no purple contour is found, do not extract anything
+    # Extraer información cuando detecta color patrón
     if contours_purple:
-        # Assuming the largest purple contour is the desired table
+        # Asumir que el borde patrón mas grande tiene el contenido de interés
         largest_contour_purple = max(contours_purple, key=cv2.contourArea)
         x, y, w, h = cv2.boundingRect(largest_contour_purple)
 
-        # Adjust coordinates to exclude the purple border
-        border_margin = 12  # Adjust this margin as needed to exclude the border
+        # Ajustar las coordenadas para excluir el borde patrón
+        # NOTE: Ajustar este margen según las necesidades
+        border_margin = 12
         x = max(0, x + border_margin)
         y = max(0, y + border_margin)
         w = max(0, w - 2 * border_margin)
         h = max(0, h - 2 * border_margin)
 
-        # Crop the image to the bounding box of the largest purple contour
+        # Cortar la imágen en función al recuadro del borde patrón
         table_image_new = new_image[y:y+h, x:x+w]
 
-        # Save the cropped table image
+        # Guardar el contenido de interés
         cropped_table_path = f"{out_path}{filename}"
         cv2.imwrite(cropped_table_path, table_image_new)
 
@@ -101,7 +102,7 @@ list_files = fnmatch.filter(os.listdir("./content/"), "*.pdf")
 # # NOTE: Ajustar el `zoom_factor` para cambiar la resolución
 for file in list_files:
     # Convertir archivos
-    pdf_to_pptx("./content/", file, zoom_factor=3)
+    pdf_to_png("./content/", file, zoom_factor=3)
 
     # Directorio del archivo convertido
     dir_in = f"./pages/{file[0:len(file) - 4]}/"
@@ -125,6 +126,7 @@ for file in list_files:
     # Define el tamaño de la imagen y la posición
     left = top = Inches(0)
 
+    # Generar diapositivas con imágenes del pdf
     for i in list_out:
         # Añade una diapositiva en blanco a la presentación
         slide = presentation.slides.add_slide(presentation.slide_layouts[5])
